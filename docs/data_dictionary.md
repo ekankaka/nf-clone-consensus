@@ -1,10 +1,10 @@
 # Data dictionary
 
-This dictionary describes the inputs and final outputs of `nf-clone-consensus`. Field names are case-sensitive. Counts are per patient unless stated otherwise.
+Input and output field definitions. Field names are case-sensitive.
 
 ## 1. Input manifest (`--input`)
 
-One row represents one sample. File paths can be absolute or relative to the directory containing the manifest.
+One row per sample. File paths may be absolute or relative to the manifest.
 
 | Column | Meaning |
 |---|---|
@@ -24,7 +24,7 @@ The integration-site file requires these columns:
 | `chromosome` | Host chromosome of integration; `HIV` indicates no identified host integration site |
 | `INTEGRATION_SITE` | Integration coordinate or site label; missing/`NA` means no identified integration site |
 
-A valid integration-site clone needs a host chromosome, an integration-site value, and a PCR ID. Reads without a matched integration-site record, or with conflicting/invalid annotations, go to `review/`.
+A valid clone assignment needs a chromosome, integration site and PCR ID. Invalid or conflicting assignments go to `review/`.
 
 ## 2. FASTA outputs
 
@@ -36,7 +36,7 @@ A valid integration-site clone needs a host chromosome, an integration-site valu
 | `unintegrated_sequences/<patient_id>_unintegrated.fasta` | Reads marked `chromosome=HIV` or with a missing integration site; preserves sample-prefixed original headers and sequences |
 | `review/unmatched_fastas/<patient_id>.unmatched.fasta` | Reads excluded from clone construction because their integration-site assignment could not be used |
 
-**Clone alignments:** All sequences in an alignment share the same length and column coordinates. The first record is the clone consensus, with `-` for alignment gaps (including called deletions and outside its covered region). Subsequent records are the contributing reads, with original sample-prefixed headers. Terminal Ns were removed before alignment. A read reverse-complemented by MAFFT is marked `[reverse_complemented]` after its header. PCR duplicates remain visible as separate rows but contribute only one PCR-family vote to the consensus. `NF_REF` is not included; reference nucleotides do not contribute consensus calls. For single-read clones, the alignment contains two identical sequences.
+**Clone alignments:** The consensus is first, followed by its contributing reads (after terminal-N trimming). All sequences share the same alignment coordinates; `-` represents gaps. Reads reversed by MAFFT carry `[reverse_complemented]` in the header. PCR duplicates appear separately but have only one vote per family. The reference is omitted. Single-read alignments contain the consensus and its one read.
 
 **Clone FASTA header**
 
@@ -87,7 +87,7 @@ One row per constructed clone consensus.
 | `qc_flags` | Semicolon-separated reasons for caution; empty when none |
 | `reference_sha256` | SHA-256 hash of the selected reference sequence (uppercase nucleotide string) |
 
-**Consensus rules (defaults):** Each PCR family contributes at most one vote per aligned position. A base or deletion must have a unique majority with at least 60% support. Multi-family clones require at least two informative families to call a position; insufficiently supported positions are `N`. Terminal gaps are ignored as missing coverage. A single original read retains its trimmed sequence.
+**Consensus rules:** Each PCR family contributes one vote per position. Calls require at least 60% support and, for multi-family clones, at least two informative families. Insufficient support yields `N`; terminal gaps are treated as missing coverage. Single reads retain their trimmed sequence.
 
 **QC flags**
 
@@ -100,7 +100,7 @@ One row per constructed clone consensus.
 | `INDEL_CALLS_REVIEW` | One or more deletions were called; inspect alignment |
 | `AMBIGUOUS_CONSENSUS_BASES` | Consensus contains one or more `N` calls |
 
-`PASS` means no flagged issue under the current rules. `LIMITED_SUPPORT` means single-family or low independent support without another reason requiring `REVIEW`. `REVIEW` indicates ambiguous bases, missing internal coverage, or called deletions. These labels are QC aids, not a measure of biological truth.
+**QC status:** `PASS` = no flagged issues; `LIMITED_SUPPORT` = limited independent support; `REVIEW` = ambiguous bases, internal coverage gaps or called deletions. These are computational QC labels.
 
 ## 5. `patient_clone_statistics.csv`
 
@@ -139,7 +139,7 @@ One row per patient.
 | `selected_timepoint_n_reads` | Total reads across samples at the selected timepoint |
 | `selected_sample_n_reads` | Input reads in the selected sample |
 
-If all reference sequences are identical, the pipeline selects one deterministically. Otherwise it chooses the timepoint with the most reads, then its highest-read sample if needed. An unresolved tie among different references stops the run.
+When references differ, the highest-read timepoint and then the highest-read sample determine selection. Unresolved ties stop the run.
 
 ## 7. `review/read_assignments.csv` and `review/unmatched_fasta_reads.csv`
 
@@ -178,6 +178,3 @@ Integration-site records that could not be linked to any input FASTA header.
 | `INTEGRATION_SITE` | Its integration-site value |
 | `reason` | Currently `NO_MATCHED_FASTA_HEADER` |
 
-## Interpreting the files
-
-The merged FASTAs contain all input sequences. The consensus FASTAs contain only integrated-site clones; unintegrated sequences and reads requiring review are kept separately. Check `read_assignments.csv` and `clone_summary.csv` before downstream analyses. The selected reference guides alignment, but does not contribute bases to the consensus. Clones with disjoint fragments or low coverage may not represent a fully reconstructed HIV genome.
