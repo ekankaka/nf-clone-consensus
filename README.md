@@ -56,11 +56,9 @@ Use `configs/slurm-apptainer.config` for Apptainer. The external HPC config sets
 
 ## Method
 
-1. Combine each patient's FASTAs across samples and timepoints, prefixing headers with `sample_id_`. Group integrated reads by `(patient_id, chromosome, INTEGRATION_SITE)`.
-2. Choose one patient reference and align terminal-N-trimmed fragments with MAFFT. The reference defines alignment coordinates but does not contribute consensus bases.
-3. Count each `(sample_id, PCR_ID)` family once per alignment position. By default, multi-family consensus calls require two informative families and at least 60% base support; unsupported positions become `N`.
+![Pipeline workflow](docs/pipeline_workflow.svg)
 
-Single-read and single-family clones are retained with QC flags. Reads without an integration site and reads with unresolved annotations are separated from clone consensuses.
+The patient-specific HIV reference guides alignment but does not contribute consensus bases. Each `(sample_id, PCR_ID)` family contributes one vote per position. By default, multi-family calls require two informative families and at least 60% support; insufficiently supported bases are `N`. Single-read and single-family clones are retained with QC flags.
 
 ## Outputs
 

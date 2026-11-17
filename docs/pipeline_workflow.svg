@@ -1,0 +1,144 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="790" viewBox="0 0 1600 790" role="img" aria-labelledby="heading desc">
+<title id="heading">nf-clone-consensus workflow</title>
+<desc id="desc">Inputs: HIV or SIV FASTA reads, integration sites, and the best HIV reference supplied per sample. Group by patient and site, trim terminal Ns and align fragments to the patient reference, count each sample ID and PCR ID family once, then call clone consensus sequences. Output clone consensus FASTAs, read alignments, merged FASTAs, and summary CSVs directly under results.</desc>
+<defs><marker id="arrow" markerWidth="11" markerHeight="11" refX="9" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#17427c"/></marker></defs>
+<rect width="1600" height="790" fill="#fff"/>
+
+<text x="800" y="52" font-family="Arial,Helvetica,sans-serif" font-size="43" font-weight="700" text-anchor="middle" fill="#12386d">nf-clone-consensus</text>
+<rect x="42" y="88" width="1516" height="106" rx="20" fill="#f6faff" stroke="#154477" stroke-width="2"/>
+<rect x="62" y="113" width="116" height="52" rx="12" fill="#154477" stroke="#154477" stroke-width="1"/>
+<text x="120" y="146" font-family="Arial,Helvetica,sans-serif" font-size="22" font-weight="700" text-anchor="middle" fill="#fff">INPUTS</text>
+<text x="219" y="135" font-family="Arial,Helvetica,sans-serif" font-size="24" font-weight="700" text-anchor="start" fill="#142943">FASTA reads</text>
+<text x="219" y="166" font-family="Arial,Helvetica,sans-serif" font-size="19" font-weight="400" text-anchor="start" fill="#516781">HIV/SIV sequences</text>
+<path d="M535 108 V174 M949 108 V174" stroke="#b9c5d4" stroke-width="2"/>
+<text x="575" y="135" font-family="Arial,Helvetica,sans-serif" font-size="24" font-weight="700" text-anchor="start" fill="#142943">Integration sites</text>
+<text x="575" y="166" font-family="Arial,Helvetica,sans-serif" font-size="19" font-weight="400" text-anchor="start" fill="#516781">Chromosome + integration coordinate</text>
+<text x="985" y="135" font-family="Arial,Helvetica,sans-serif" font-size="24" font-weight="700" text-anchor="start" fill="#142943">Best reference per patient</text>
+<text x="985" y="166" font-family="Arial,Helvetica,sans-serif" font-size="19" font-weight="400" text-anchor="start" fill="#516781">Selected from per-sample HIV references</text>
+<path d="M800 194 L800 235" fill="none" stroke="#154477" stroke-width="4" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="30" y="244" width="348" height="395" rx="18" fill="#eff7ff" stroke="#aacbef" stroke-width="2"/>
+<circle cx="74" cy="288" r="28" fill="#154477"/>
+<text x="74" y="297" font-family="Arial,Helvetica,sans-serif" font-size="28" font-weight="700" text-anchor="middle" fill="#fff">1</text>
+<text x="113" y="297" font-family="Arial,Helvetica,sans-serif" font-size="25" font-weight="700" text-anchor="start" fill="#132c4b">Group reads</text>
+<path d="M380 456 L419 456" fill="none" stroke="#154477" stroke-width="4" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="427" y="244" width="348" height="395" rx="18" fill="#f0f9ef" stroke="#a9d89f" stroke-width="2"/>
+<circle cx="471" cy="288" r="28" fill="#154477"/>
+<text x="471" y="297" font-family="Arial,Helvetica,sans-serif" font-size="28" font-weight="700" text-anchor="middle" fill="#fff">2</text>
+<text x="510" y="297" font-family="Arial,Helvetica,sans-serif" font-size="25" font-weight="700" text-anchor="start" fill="#132c4b">Trim and align</text>
+<path d="M777 456 L816 456" fill="none" stroke="#154477" stroke-width="4" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="824" y="244" width="348" height="395" rx="18" fill="#fffaf0" stroke="#edc76d" stroke-width="2"/>
+<circle cx="868" cy="288" r="28" fill="#154477"/>
+<text x="868" y="297" font-family="Arial,Helvetica,sans-serif" font-size="28" font-weight="700" text-anchor="middle" fill="#fff">3</text>
+<text x="907" y="297" font-family="Arial,Helvetica,sans-serif" font-size="25" font-weight="700" text-anchor="start" fill="#132c4b">Handle PCR duplicates</text>
+<path d="M1174 456 L1213 456" fill="none" stroke="#154477" stroke-width="4" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="1221" y="244" width="348" height="395" rx="18" fill="#f6f3ff" stroke="#bca6e6" stroke-width="2"/>
+<circle cx="1265" cy="288" r="28" fill="#154477"/>
+<text x="1265" y="297" font-family="Arial,Helvetica,sans-serif" font-size="28" font-weight="700" text-anchor="middle" fill="#fff">4</text>
+<text x="1304" y="297" font-family="Arial,Helvetica,sans-serif" font-size="25" font-weight="700" text-anchor="start" fill="#132c4b">Call consensus</text>
+<text x="61" y="344" font-family="Arial,Helvetica,sans-serif" font-size="20" font-weight="400" text-anchor="start" fill="#142943">Across samples and timepoints</text>
+<text x="61" y="371" font-family="Arial,Helvetica,sans-serif" font-size="20" font-weight="400" text-anchor="start" fill="#142943">by patient + integration site</text>
+<text x="62" y="440" font-family="Arial,Helvetica,sans-serif" font-size="21" font-weight="700" text-anchor="start" fill="#142943">PT1 · site 1</text>
+<rect x="181" y="422" width="150" height="18" rx="5" fill="#8456cb" stroke="#6737a7" stroke-width="1.5"/>
+<rect x="195" y="454" width="135" height="18" rx="5" fill="#8456cb" stroke="#6737a7" stroke-width="1.5"/>
+<rect x="201" y="486" width="110" height="18" rx="5" fill="#24b8ec" stroke="#0688bf" stroke-width="1.5"/>
+<rect x="173" y="518" width="159" height="18" rx="5" fill="#24b8ec" stroke="#0688bf" stroke-width="1.5"/>
+<text x="61" y="602" font-family="Arial,Helvetica,sans-serif" font-size="18" font-weight="400" text-anchor="start" fill="#53687f">Purple / cyan: two PCR families</text>
+<text x="450" y="344" font-family="Arial,Helvetica,sans-serif" font-size="20" font-weight="400" text-anchor="start" fill="#142943">Remove terminal Ns</text>
+<text x="450" y="371" font-family="Arial,Helvetica,sans-serif" font-size="20" font-weight="400" text-anchor="start" fill="#142943">and align variable-length reads</text>
+<text x="451" y="415" font-family="Arial,Helvetica,sans-serif" font-size="19" font-weight="700" text-anchor="start" fill="#142943">Selected patient reference</text>
+<rect x="462" y="442" width="288" height="15" rx="5" fill="#78818a"/>
+<rect x="492" y="478" width="152" height="18" rx="5" fill="#8456cb" stroke="#6737a7" stroke-width="1.5"/>
+<rect x="515" y="508" width="173" height="18" rx="5" fill="#8456cb" stroke="#6737a7" stroke-width="1.5"/>
+<rect x="542" y="538" width="100" height="18" rx="5" fill="#24b8ec" stroke="#0688bf" stroke-width="1.5"/>
+<rect x="477" y="568" width="130" height="18" rx="5" fill="#24b8ec" stroke="#0688bf" stroke-width="1.5"/>
+<text x="451" y="615" font-family="Arial,Helvetica,sans-serif" font-size="17" font-weight="400" text-anchor="start" fill="#53687f">Reference provides coordinates only</text>
+<text x="846" y="344" font-family="Arial,Helvetica,sans-serif" font-size="20" font-weight="400" text-anchor="start" fill="#142943">Identify each PCR family by</text>
+<text x="846" y="371" font-family="Arial,Helvetica,sans-serif" font-size="20" font-weight="400" text-anchor="start" fill="#142943">(sample_id, PCR_ID)</text>
+<text x="846" y="402" font-family="Arial,Helvetica,sans-serif" font-size="20" font-weight="700" text-anchor="start" fill="#154477">One family = one vote</text>
+<rect x="851" y="464" width="155" height="18" rx="5" fill="#8456cb" stroke="#6737a7" stroke-width="1.5"/>
+<rect x="851" y="493" width="155" height="18" rx="5" fill="#8456cb" stroke="#6737a7" stroke-width="1.5"/>
+<text x="1022" y="485" font-family="Arial,Helvetica,sans-serif" font-size="20" font-weight="700" text-anchor="start" fill="#154477">→ 1 vote</text>
+<rect x="851" y="545" width="155" height="18" rx="5" fill="#24b8ec" stroke="#0688bf" stroke-width="1.5"/>
+<rect x="851" y="574" width="155" height="18" rx="5" fill="#24b8ec" stroke="#0688bf" stroke-width="1.5"/>
+<text x="1022" y="568" font-family="Arial,Helvetica,sans-serif" font-size="20" font-weight="700" text-anchor="start" fill="#154477">→ 1 vote</text>
+<text x="1244" y="344" font-family="Arial,Helvetica,sans-serif" font-size="20" font-weight="400" text-anchor="start" fill="#142943">One consensus per patient</text>
+<text x="1244" y="371" font-family="Arial,Helvetica,sans-serif" font-size="20" font-weight="400" text-anchor="start" fill="#142943">and integration site</text>
+<text x="1244" y="412" font-family="Arial,Helvetica,sans-serif" font-size="19" font-weight="400" text-anchor="start" fill="#53687f">Uncertain bases → N</text>
+<rect x="1250" y="447" width="285" height="18" rx="5" fill="#3165b1" stroke="#0688bf" stroke-width="1.5"/>
+<rect x="1250" y="490" width="283" height="27" rx="6" fill="#fff" stroke="#aab4c2"/>
+<rect x="1260" y="494" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1273.2" y="494" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1286.4" y="494" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1299.6" y="494" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1312.8" y="494" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1326" y="494" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1339.2" y="494" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1352.4" y="494" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1365.6" y="494" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1378.8" y="494" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1392" y="494" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1405.2" y="494" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1418.4" y="494" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1431.6" y="494" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1444.8" y="494" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1458" y="494" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1471.2" y="494" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1484.4" y="494" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1497.6" y="494" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1510.8" y="494" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1250" y="533" width="283" height="27" rx="6" fill="#fff" stroke="#aab4c2"/>
+<rect x="1260" y="537" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1273.2" y="537" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1286.4" y="537" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1299.6" y="537" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1312.8" y="537" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1326" y="537" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1339.2" y="537" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1352.4" y="537" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1365.6" y="537" width="4.7" height="18" fill="#df414a"/>
+<rect x="1378.8" y="537" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1392" y="537" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1405.2" y="537" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1418.4" y="537" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1431.6" y="537" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1444.8" y="537" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1458" y="537" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1471.2" y="537" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1484.4" y="537" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1497.6" y="537" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1510.8" y="537" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1250" y="576" width="283" height="27" rx="6" fill="#fff" stroke="#aab4c2"/>
+<rect x="1260" y="580" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1273.2" y="580" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1286.4" y="580" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1299.6" y="580" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1312.8" y="580" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1326" y="580" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1339.2" y="580" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1352.4" y="580" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1365.6" y="580" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1378.8" y="580" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1392" y="580" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1405.2" y="580" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1418.4" y="580" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1431.6" y="580" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1444.8" y="580" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1458" y="580" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1471.2" y="580" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1484.4" y="580" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1497.6" y="580" width="4.7" height="18" fill="#a8b4bb"/>
+<rect x="1510.8" y="580" width="4.7" height="18" fill="#a8b4bb"/>
+<path d="M800 638 L800 669" fill="none" stroke="#154477" stroke-width="4" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="42" y="674" width="1516" height="97" rx="18" fill="#f8fbff" stroke="#154477" stroke-width="2"/>
+<rect x="60" y="695" width="124" height="53" rx="10" fill="#154477" stroke="#154477" stroke-width="1"/>
+<text x="122" y="729" font-family="Arial,Helvetica,sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#fff">OUTPUTS</text>
+<text x="205" y="716" font-family="Arial,Helvetica,sans-serif" font-size="21" font-weight="700" text-anchor="start" fill="#142943">Clone consensus</text>
+<text x="205" y="746" font-family="Arial,Helvetica,sans-serif" font-size="17" font-weight="400" text-anchor="start" fill="#536781">results/clone_consensus/</text>
+<path d="M535 694 V750 M932 694 V750 M1255 694 V750" stroke="#bdc8d5" stroke-width="2"/>
+<text x="557" y="716" font-family="Arial,Helvetica,sans-serif" font-size="21" font-weight="700" text-anchor="start" fill="#142943">Clone–read alignments</text>
+<text x="557" y="746" font-family="Arial,Helvetica,sans-serif" font-size="17" font-weight="400" text-anchor="start" fill="#536781">results/clone_alignments/</text>
+<text x="955" y="716" font-family="Arial,Helvetica,sans-serif" font-size="21" font-weight="700" text-anchor="start" fill="#142943">Merged FASTAs</text>
+<text x="955" y="746" font-family="Arial,Helvetica,sans-serif" font-size="17" font-weight="400" text-anchor="start" fill="#536781">results/merged_fastas/</text>
+<text x="1277" y="716" font-family="Arial,Helvetica,sans-serif" font-size="21" font-weight="700" text-anchor="start" fill="#142943">Summary CSVs / QC</text>
+<text x="1277" y="746" font-family="Arial,Helvetica,sans-serif" font-size="17" font-weight="400" text-anchor="start" fill="#536781">results/</text>
+</svg>
