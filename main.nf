@@ -17,6 +17,7 @@ process PREPARE_PATIENT {
     tuple val(patient_id), val(sample_ids), val(timepoints), val(original_ref_paths), path(fastas, stageAs: 'fastas??????/*'), path(site_files, stageAs: 'sites??????/*'), path(ref_files, stageAs: 'refs??????/*')
 
     output:
+    path "${patient_id}_merged.fasta", emit: merged_fasta
     tuple val(patient_id), path('clone_inputs'), path('patient_reference.fasta'), path('clone_info.json'), path("${patient_id}.counts.csv"), path("${patient_id}.unmatched.csv"), path("${patient_id}.assignments.csv"), path("${patient_id}.unused_sites.csv"), path("${patient_id}.reference_selection.csv"), path("${patient_id}_unintegrated.fasta"), emit: prepared
 
     script:
@@ -76,12 +77,14 @@ process FINALIZE_PATIENT {
     memory '3 GB'
 
     publishDir "${params.outdir}/clone_consensus", mode: 'copy', pattern: '*_consensus.fasta', overwrite: true
+    publishDir "${params.outdir}/clone_alignments", mode: 'copy', pattern: "${patient_id}", overwrite: true
 
     input:
     tuple val(patient_id), path(aligned_clones), path(clone_info), path(counts), path(unmatched), path(assignments), path(unused_sites), path(reference_selection), path(unintegrated)
 
     output:
     path "${patient_id}_consensus.fasta", emit: final_fasta
+    path "${patient_id}", emit: clone_alignments
     path "${patient_id}.clone_summary.csv", emit: clone_summaries
     path "${patient_id}.patient_stats.csv", emit: stats
     path "${patient_id}.counts.csv", emit: counts
@@ -205,7 +208,7 @@ workflow {
     ALIGN_CLONES(PREPARE_PATIENT.out.prepared)
     FINALIZE_PATIENT(ALIGN_CLONES.out.aligned)
 
-    // Keep one combined CSV for each report rather than separate patient files.
+    // Combine patient-level reports.
     MAKE_SUMMARIES(
         FINALIZE_PATIENT.out.counts.collect(),
         FINALIZE_PATIENT.out.clone_summaries.collect(),

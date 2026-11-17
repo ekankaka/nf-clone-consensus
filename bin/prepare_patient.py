@@ -191,7 +191,7 @@ def main():
         for r in records:
             fasta_write(output, r['header'], r['sequence'])
 
-    # Keep unmatched or conflicting reads separate; they should not enter a consensus.
+    # Exclude unresolved assignments from clone consensus construction.
     assignments, unresolved, unintegrated, clone_groups = [], [], [], defaultdict(list)
     matched_records = set()
     for rec in records:

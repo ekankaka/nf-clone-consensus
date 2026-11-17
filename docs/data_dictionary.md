@@ -32,8 +32,11 @@ A valid integration-site clone needs a host chromosome, an integration-site valu
 |---|---|
 | `merged_fastas/<patient_id>_merged.fasta` | All sample FASTA sequences combined for a patient, with `sample_id_` prefixed to each original header |
 | `clone_consensus/<patient_id>_consensus.fasta` | One sequence for each host integration site, including single-read and single-PCR-family consensuses |
+| `clone_alignments/<patient_id>/<clone_id>_alignment.fasta` | One FASTA alignment per integrated clone; the consensus followed by all contributing terminal-N-trimmed reads |
 | `unintegrated_sequences/<patient_id>_unintegrated.fasta` | Reads marked `chromosome=HIV` or with a missing integration site; preserves sample-prefixed original headers and sequences |
 | `review/unmatched_fastas/<patient_id>.unmatched.fasta` | Reads excluded from clone construction because their integration-site assignment could not be used |
+
+**Clone alignments:** All sequences in an alignment share the same length and column coordinates. The first record is the clone consensus, with `-` for alignment gaps (including called deletions and outside its covered region). Subsequent records are the contributing reads, with original sample-prefixed headers. Terminal Ns were removed before alignment. A read reverse-complemented by MAFFT is marked `[reverse_complemented]` after its header. PCR duplicates remain visible as separate rows but contribute only one PCR-family vote to the consensus. `NF_REF` is not included; reference nucleotides do not contribute consensus calls. For single-read clones, the alignment contains two identical sequences.
 
 **Clone FASTA header**
 

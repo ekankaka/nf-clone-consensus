@@ -104,11 +104,13 @@ def test_pcr_duplicates_one_vote(tmp_path):
         ('R0000004','----CCCCGGGGTTTT'),
         ('R0000005','----CCCCGGGGTTTT'),
     ])
-    seq, qc=fmod.make_clone(info, aln, .60, .60, 2)
+    seq, qc, aligned_reads, aligned_consensus=fmod.make_clone(info, aln, .60, .60, 2)
     assert seq == 'AAAACCCCGGGGTTTT'
     assert qc['n_low_support_positions'] == 0
     assert qc['consensus_type'] == 'clone_consensus'
     assert qc['percent_positions_multi_family'] == 100.0
+    assert aligned_consensus == 'AAAACCCCGGGGTTTT'
+    assert len(aligned_reads) == 5
 
 
 def test_uncovered_reference_is_not_filled(tmp_path):
@@ -119,10 +121,11 @@ def test_uncovered_reference_is_not_filled(tmp_path):
         ('NF_REF','AAAACCCCGGGGTTTT'),
         ('R0000001','AAAA------------'),
         ('R0000002','------------TTTT')])
-    seq,qc=fmod.make_clone(info,aln,.60,.60,2)
+    seq,qc,aligned_reads,aligned_consensus=fmod.make_clone(info,aln,.60,.60,2)
     assert seq == 'N'*16
     assert qc['n_internal_uncovered_positions'] == 8
     assert qc['qc_status'] == 'REVIEW'
+    assert len(aligned_consensus) == len(aligned_reads[0][1])
 
 
 def test_supported_internal_deletion(tmp_path):
@@ -131,8 +134,9 @@ def test_supported_internal_deletion(tmp_path):
         {'internal_id':'R0000002','sample_id':'PT1-2','PCR_ID':'B'}]}
     aln=make_alignment_file(tmp_path, info['clone_id'],[
         ('NF_REF','AACC'),('R0000001','AA-C'),('R0000002','AA-C')])
-    seq,qc=fmod.make_clone(info,aln,.60,.60,2)
+    seq,qc,aligned_reads,aligned_consensus=fmod.make_clone(info,aln,.60,.60,2)
     assert seq == 'AAC'
+    assert aligned_consensus == 'AA-C'
     assert qc['n_called_deletions'] == 1
     assert qc['qc_status']=='REVIEW'
 
@@ -141,8 +145,10 @@ def test_single_read_consensus(tmp_path):
     info={'clone_id':'PT1_clone000004','n_reads':1,'n_unique_reads':1,'reads':[
         {'internal_id':'R0000001','sample_id':'PT1-1','PCR_ID':'A'}]}
     path=make_alignment_file(tmp_path,info['clone_id'],[('R0000001','GGTACC')])
-    seq,qc=fmod.make_clone(info,path,.60,.60,2)
+    seq,qc,aligned_reads,aligned_consensus=fmod.make_clone(info,path,.60,.60,2)
     assert seq=='GGTACC' and qc['consensus_type']=='single_read_consensus'
+    assert aligned_consensus == seq
+    assert aligned_reads == [('R0000001', seq)]
 
 
 def test_component_reports_end_to_end_without_mafft(tmp_path):
@@ -194,6 +200,14 @@ def test_component_reports_end_to_end_without_mafft(tmp_path):
             assert clone_fa[0] == ('PT1_chr1_100_5_4','AAAACCCCGGGGTTTT')
             assert clone_fa[1] == ('PT1_chr2_200_1_1','GGGTTT')
             assert len(list(fmod.fasta_iter(folder/'PT1_unintegrated.fasta'))) == 2
+            a = list(fmod.fasta_iter(folder/'PT1'/'PT1_clone000001_alignment.fasta'))
+            assert a[0] == ('PT1_chr1_100_5_4', 'AAAACCCCGGGGTTTT')
+            assert len(a) == 6
+            assert a[1][0] == 'PT1-1_readA_more'
+            assert a[1][1] == 'AAAACCCC--------'
+            assert all(len(sequence) == len(a[0][1]) for _, sequence in a)
+            b = list(fmod.fasta_iter(folder/'PT1'/'PT1_clone000002_alignment.fasta'))
+            assert len(b) == 2 and b[0][1] == b[1][1] == 'GGGTTT'
             assert len(csvrows(folder/'PT1.unmatched.csv')) == 1
             assert csvrows(folder/'PT1.patient_stats.csv')[0]['n_input_sequences'] == '9'
 
@@ -217,3 +231,20 @@ def test_component_reports_end_to_end_without_mafft(tmp_path):
     assert len(csvrows(summary/'reference_selection.csv'))==2
     assert len(csvrows(summary/'read_assignments.csv'))==11
     assert len(csvrows(summary/'unmatched_fasta_reads.csv'))==1
+
+
+def test_merged_fasta_is_declared_as_nextflow_output():
+    workflow = (ROOT / 'main.nf').read_text()
+    assert 'path "${patient_id}_merged.fasta", emit: merged_fasta' in workflow
+
+
+def test_reverse_complemented_read_label(tmp_path):
+    clone = {'clone_id':'PT1_clone000005','n_reads':2,'n_unique_reads':2,'reads':[
+        {'internal_id':'R0000001','sample_id':'PT1-1','PCR_ID':'A', 'fasta_header':'PT1-1_readA'},
+        {'internal_id':'R0000002','sample_id':'PT1-2','PCR_ID':'B', 'fasta_header':'PT1-2_readB'}]}
+    aln = make_alignment_file(tmp_path,clone['clone_id'],[
+        ('NF_REF','AAAA'), ('R0000001','AAAA'),('_R_R0000002','AAAA')])
+    seq, qc, reads, aligned = fmod.make_clone(clone,aln,.60,.60,2)
+    assert seq == aligned == 'AAAA'
+    assert reads == [('PT1-1_readA','AAAA'),('PT1-2_readB [reverse_complemented]','AAAA')]
+    assert qc['n_reverse_complemented_reads'] == 1

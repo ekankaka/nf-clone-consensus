@@ -81,20 +81,22 @@ def make_clone(clone, aln_path, min_fraction, min_family_fraction, min_families)
         if len(obs) != 1 or obs[0][0].split()[0] != reads[0]['internal_id']:
             raise ValueError(f"{clone['clone_id']}: failed to verify single-read FASTA")
         seq = obs[0][1].upper()
-        return seq, {'consensus_type': 'single_read_consensus',
-                     'n_ambiguous_bases': sum(c not in BASES for c in seq),
-                     'n_evaluated_alignment_columns': len(seq),
-                     'n_called_deletions': 0, 'n_internal_uncovered_positions': 0,
-                     'max_uncovered_run': 0, 'n_low_support_positions': 0,
-                     'n_multi_family_supported_positions': 0,
-                     'percent_positions_multi_family': 0.0,
-                     'n_reverse_complemented_reads': 0,
-                     'qc_status': 'LIMITED_SUPPORT', 'qc_flags': 'SINGLE_READ'}
+        qc = {'consensus_type': 'single_read_consensus',
+              'n_ambiguous_bases': sum(c not in BASES for c in seq),
+              'n_evaluated_alignment_columns': len(seq),
+              'n_called_deletions': 0, 'n_internal_uncovered_positions': 0,
+              'max_uncovered_run': 0, 'n_low_support_positions': 0,
+              'n_multi_family_supported_positions': 0,
+              'percent_positions_multi_family': 0.0,
+              'n_reverse_complemented_reads': 0,
+              'qc_status': 'LIMITED_SUPPORT', 'qc_flags': 'SINGLE_READ'}
+        return seq, qc, [(reads[0].get('fasta_header', reads[0]['internal_id']), seq)], seq
 
     observed = list(fasta_iter(aln_path))
     ids = {r['internal_id'] for r in reads}
     aligned = {}
     reverse_count = 0
+    reversed_reads = set()
     ref = None
     for head, seq in observed:
         label = head.split()[0]
@@ -107,6 +109,7 @@ def make_clone(clone, aln_path, min_fraction, min_family_fraction, min_families)
         if reversed_orientation:
             label = label[3:]
             reverse_count += 1
+            reversed_reads.add(label)
         if label not in ids or label in aligned:
             raise ValueError(f"{clone['clone_id']}: unexpected/duplicate aligned read {label}")
         aligned[label] = seq.upper().replace('.', '-')
@@ -142,7 +145,7 @@ def make_clone(clone, aln_path, min_fraction, min_family_fraction, min_families)
     if not covered:
         raise ValueError(f"{clone['clone_id']}: no supported read positions")
     start, stop = min(covered), max(covered)
-    answer = []
+    answer = ['-'] * width
     internal_uncovered = 0
     max_uncovered_run = 0
     run = 0
@@ -154,7 +157,7 @@ def make_clone(clone, aln_path, min_fraction, min_family_fraction, min_families)
             # Uncovered positions stay as N, not reference bases.
             # This also keeps the distance between non-overlapping fragments.
             if ref[i] != '-':
-                answer.append('N')
+                answer[i] = 'N'
                 internal_uncovered += 1
                 run += 1
                 max_uncovered_run = max(max_uncovered_run, run)
@@ -171,9 +174,10 @@ def make_clone(clone, aln_path, min_fraction, min_family_fraction, min_families)
             # Remove independently supported deletions from the FASTA sequence.
             called_deletions += 1
             continue
-        answer.append(call)
+        answer[i] = call
 
-    seq = ''.join(answer)
+    aligned_consensus = ''.join(answer)
+    seq = aligned_consensus.replace('-', '')
     n_evaluated = stop - start + 1
     if not seq:
         raise ValueError(f"{clone['clone_id']}: consensus has zero length")
@@ -188,21 +192,28 @@ def make_clone(clone, aln_path, min_fraction, min_family_fraction, min_families)
         flags.append('INDEL_CALLS_REVIEW')
     if 'N' in seq:
         flags.append('AMBIGUOUS_CONSENSUS_BASES')
-    # Keep flagged clones in the FASTA so their alignments can be reviewed.
+    # Flag uncertain calls without discarding the clone.
     qc_status = ('REVIEW' if internal_uncovered or called_deletions or 'N' in seq else
                  'LIMITED_SUPPORT' if len(families) == 1 or low_support else 'PASS')
-    return seq, {'consensus_type': 'single_family_consensus' if len(families) == 1 else 'clone_consensus',
-                 'n_ambiguous_bases': sum(c not in BASES for c in seq),
-                 'n_evaluated_alignment_columns': n_evaluated,
-                 'n_called_deletions': called_deletions,
-                 'n_internal_uncovered_positions': internal_uncovered,
-                 'max_uncovered_run': max_uncovered_run,
-                 'n_low_support_positions': low_support,
-                 'n_multi_family_supported_positions': multi_supported,
-                 'percent_positions_multi_family': round(100 * multi_supported / n_evaluated, 2),
-                 'n_reverse_complemented_reads': reverse_count,
-                 'qc_status': qc_status,
-                 'qc_flags': ';'.join(flags)}
+    qc = {'consensus_type': 'single_family_consensus' if len(families) == 1 else 'clone_consensus',
+          'n_ambiguous_bases': sum(c not in BASES for c in seq),
+          'n_evaluated_alignment_columns': n_evaluated,
+          'n_called_deletions': called_deletions,
+          'n_internal_uncovered_positions': internal_uncovered,
+          'max_uncovered_run': max_uncovered_run,
+          'n_low_support_positions': low_support,
+          'n_multi_family_supported_positions': multi_supported,
+          'percent_positions_multi_family': round(100 * multi_supported / n_evaluated, 2),
+          'n_reverse_complemented_reads': reverse_count,
+          'qc_status': qc_status,
+          'qc_flags': ';'.join(flags)}
+    aligned_reads = []
+    for read in reads:
+        label = read.get('fasta_header', read['internal_id'])
+        if read['internal_id'] in reversed_reads:
+            label += ' [reverse_complemented]'
+        aligned_reads.append((label, aligned[read['internal_id']]))
+    return seq, qc, aligned_reads, aligned_consensus
 
 
 CLONE_COLUMNS = ['patient_id', 'clone_id', 'consensus_header', 'chromosome', 'INTEGRATION_SITE',
@@ -238,12 +249,19 @@ def main():
     unmatched_count = len(read_csv(args.unmatched))
     no_site_count = len(list(fasta_iter(args.unintegrated)))
     rows = []
+    alignment_dir = Path(args.patient)
+    alignment_dir.mkdir(exist_ok=True)
     with open(f'{args.patient}_consensus.fasta', 'w', encoding='utf-8') as output:
         for clone in clones:
             aligned_file = Path(args.aligned_clones) / (clone['clone_id'] + '.fasta')
-            seq, qc = make_clone(clone, aligned_file, args.min_base_fraction,
-                                 args.min_family_fraction, args.min_families_per_call)
+            seq, qc, aligned_reads, aligned_consensus = make_clone(
+                clone, aligned_file, args.min_base_fraction,
+                args.min_family_fraction, args.min_families_per_call)
             fasta_write(output, clone['consensus_header'], seq)
+            with open(alignment_dir / f"{clone['clone_id']}_alignment.fasta", 'w') as alignment:
+                fasta_write(alignment, clone['consensus_header'], aligned_consensus)
+                for header, sequence in aligned_reads:
+                    fasta_write(alignment, header, sequence)
             rows.append({
                 'patient_id': args.patient, 'clone_id': clone['clone_id'],
                 'consensus_header': clone['consensus_header'],

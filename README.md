@@ -1,6 +1,6 @@
 # nf-clone-consensus
 
-A Nextflow DSL2 pipeline for constructing HIV consensus sequences from reads assigned to the same host integration site. It combines reads across a patient's samples and timepoints, accounts for PCR duplicates, and aligns partial sequences against a selected patient HIV reference.
+Nextflow pipeline for HIV clone consensus sequences from integration-site-linked reads, with PCR duplicate handling and reference-guided alignment.
 
 The pipeline produces one consensus per integration site. Reads with no identified integration site are kept separately. Unmatched or conflicting annotations are reported for review.
 
@@ -72,7 +72,7 @@ nextflow run main.nf \
 
 Use `configs/slurm-apptainer.config` for Apptainer. Set the partition, account, time limits, and site-specific paths in your own `my_hpc.config`, outside the repository. The work directory and container cache must be accessible from compute nodes. Start Nextflow in an allowed HPC allocation if your login node prohibits long-running jobs.
 
-For a repeated run, add `-resume`. Do not use `-resume` until there is a prior successful or partial run to reuse.
+For a repeated run, add `-resume`.
 
 ## Method
 
@@ -93,6 +93,10 @@ results/
 │   └── PT1_merged.fasta
 ├── clone_consensus/
 │   └── PT1_consensus.fasta
+├── clone_alignments/
+│   └── PT1/
+│       ├── PT1_clone000001_alignment.fasta
+│       └── PT1_clone000002_alignment.fasta
 ├── unintegrated_sequences/
 │   └── PT1_unintegrated.fasta
 ├── patient_sequence_counts.csv
@@ -105,6 +109,8 @@ results/
     ├── unused_integration_records.csv
     └── unmatched_fastas/
 ```
+
+`clone_alignments/` contains one FASTA per clone, with the aligned consensus followed by its terminal-N-trimmed contributing reads. Gaps (`-`) mark positions used to maintain alignment. Reads reversed by MAFFT are labeled `[reverse_complemented]`.
 
 `clone_consensus/` contains integrated-site consensuses only. `unintegrated_sequences/` retains the original sample-prefixed sequence headers and nucleotide sequences. Ambiguous or unmatched reads are kept in `review/` and excluded from clone consensus construction.
 
@@ -137,4 +143,4 @@ These consensuses are computational summaries, not proof that a complete provira
 - `tests/` — synthetic data and Python tests
 - `docs/data_dictionary.md` — inputs, outputs, and QC field definitions
 
-Study data, results, HPC account settings, and large container caches should stay outside the GitHub repository. Licensed under MIT; see [LICENSE](LICENSE).
+License: MIT. See [LICENSE](LICENSE).

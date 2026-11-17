@@ -1,5 +1,11 @@
 # Changelog
 
+## Next update
+
+- Publish patient-level merged FASTA files.
+- Add consensus-versus-read alignments for each clone.
+- Simplify repository description and comments.
+
 ## v3.1 documentation revision
 
 - Edited comments, documentation, and setup instructions for clarity and consistency.
