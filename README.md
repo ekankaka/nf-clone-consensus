@@ -89,6 +89,6 @@ Here, `n_reads` is the total number of contributing reads and `n_unique_reads` i
 
 ## Limitations
 
-Consensus sequences are computational summaries, not necessarily complete HIV/SIV genomes. Review low-coverage clones, ambiguous calls and indels using `clone_summary.csv` and `clone_alignments/`. Input FASTAs do not contain base-quality scores. The complete Nextflow/MAFFT workflow has not yet been independently validated end to end.
+Consensus sequences are computational summaries, not necessarily complete HIV/SIV genomes. Review low-coverage clones, ambiguous calls and indels using `clone_summary.csv` and `clone_alignments/`. Input FASTAs do not contain base-quality scores.
 
 License: [MIT](LICENSE).
