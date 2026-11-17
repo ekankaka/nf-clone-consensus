@@ -8,7 +8,7 @@ A Nextflow pipeline for generating HIV/SIV clone consensus sequences from reads 
 - Docker, Singularity, or Apptainer
 - SLURM for HPC runs using the SLURM configurations
 
-Python and MAFFT are provided by the containers. Python 3 and `pytest` are needed only for the component tests.
+Python and MAFFT are provided by the containers.
 
 ## Input
 
@@ -25,7 +25,7 @@ Paths may be absolute or relative to the CSV location. The integration-site file
 
 ## Run
 
-**Test locally (Singularity):**
+**Optional example run (Singularity):**
 
 ```bash
 git clone https://github.com/ekankaka/nf-clone-consensus.git
@@ -87,16 +87,8 @@ Each clone alignment contains the aligned consensus and its terminal-N-trimmed i
 
 Here, `n_reads` is the total number of contributing reads and `n_unique_reads` is the number of distinct PCR families. See the [data dictionary](docs/data_dictionary.md) for every output field and QC flag.
 
-## Validation and limitations
+## Limitations
 
-Run the Python tests:
-
-```bash
-python3 -m pytest -q tests/test_consensus.py
-```
-
-These test data preparation, consensus logic and reporting, but not the complete Nextflow/MAFFT workflow. An end-to-end run is needed to validate an installation.
-
-Consensus sequences are computational summaries, not necessarily complete HIV genomes. Review low-coverage clones, ambiguous calls and indels using `clone_summary.csv` and `clone_alignments/`. Input FASTAs do not contain base-quality scores.
+Consensus sequences are computational summaries, not necessarily complete HIV/SIV genomes. Review low-coverage clones, ambiguous calls and indels using `clone_summary.csv` and `clone_alignments/`. Input FASTAs do not contain base-quality scores. The complete Nextflow/MAFFT workflow has not yet been independently validated end to end.
 
 License: [MIT](LICENSE).
