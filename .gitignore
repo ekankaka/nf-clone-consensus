@@ -1,0 +1,37 @@
+# Pipeline runs and local settings
+work/
+results/
+results_*/
+.nextflow/
+.nextflow.log*
+*.log
+.env
+
+# Container images and research data
+*.sif
+*.simg
+*.img
+*.bam
+*.cram
+*.fastq
+*.fastq.gz
+*.fa
+*.fna
+*.fasta
+*.fa.gz
+*.fna.gz
+*.fasta.gz
+*.csv
+*.tsv
+
+# Keep the synthetic fixtures
+!tests/data/**/*.fa
+!tests/data/**/*.fna
+!tests/data/**/*.fasta
+!tests/data/**/*.csv
+!tests/data/**/*.tsv
+
+# Python caches
+__pycache__/
+.pytest_cache/
+*.pyc
