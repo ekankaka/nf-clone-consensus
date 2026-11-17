@@ -1,0 +1,4 @@
+sample_id,patient_id,timepoint,hiv_fasta_filepath,integration_site_filepath,best_hiv_ref_filepath
+PT1-1,PT1,1,fastas/PT1-1.fa,sites/PT1-1.csv,references/refA.fa
+PT1-2,PT1,2,fastas/PT1-2.fa,sites/PT1-2.csv,references/refB.fa
+PT2-3,PT2,3,fastas/PT2-3.fa,sites/PT2-3.csv,references/refA.fa

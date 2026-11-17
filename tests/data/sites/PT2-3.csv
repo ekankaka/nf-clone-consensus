@@ -1,0 +1,3 @@
+READ,chromosome,INTEGRATION_SITE,PCR_ID
+readOnly,chr8,789,pcr1
+readHIV,HIV,NA,pcr2

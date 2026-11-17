@@ -1,0 +1,5 @@
+READ,chromosome,INTEGRATION_SITE,PCR_ID
+readA,chr1,100,pcr01
+readB,chr1,100,pcr01
+readC,chr1,100,pcr02
+readNS,HIV,NA,pcr99
