@@ -1,6 +1,6 @@
 # nf-clone-consensus
 
-A Nextflow pipeline for generating HIV clone consensus sequences from reads grouped by integration site. It uses reference-guided alignment of variable-length fragments and accounts for PCR duplicates.
+A Nextflow pipeline for generating HIV/SIV clone consensus sequences from reads grouped by integration site. It uses reference-guided alignment of variable-length fragments and accounts for PCR duplicates.
 
 ## Requirements
 
