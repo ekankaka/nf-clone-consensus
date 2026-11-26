@@ -59,7 +59,7 @@ Use `configs/slurm-apptainer.config` for Apptainer. The external HPC config sets
 
 ![Pipeline workflow](docs/pipeline_workflow.svg)
 
-The patient-specific HIV reference guides alignment but does not contribute consensus bases. Each `(sample_id, PCR_ID)` family contributes one vote per position. By default, multi-family calls require two informative families and at least 60% support; insufficiently supported bases are `N`. Single-read and single-family clones are retained with QC flags.
+By default, each trimmed integrated read is checked for orientation against the selected patient reference; use `--check_orientation false` to disable this. Uncertain orientations are retained and flagged. The reference guides alignment but does not contribute consensus bases. Each `(sample_id, PCR_ID)` family contributes one vote per position. By default, multi-family calls require two informative families and at least 60% support; insufficiently supported bases are `N`. Single-read and single-family clones are retained with QC flags.
 
 ## Outputs
 
@@ -90,6 +90,6 @@ Here, `n_reads` is the total number of contributing reads and `n_unique_reads` i
 
 ## Limitations
 
-Consensus sequences are computational summaries, not necessarily complete HIV/SIV genomes. Review low-coverage clones, ambiguous calls and indels using `clone_summary.csv` and `clone_alignments/`. Input FASTAs do not contain base-quality scores.
+Consensus sequences are computational summaries, not necessarily complete HIV/SIV genomes. Review low-coverage clones, ambiguous calls and indels using `clone_summary.csv` and `clone_alignments/`. Input FASTAs do not contain base-quality scores. Short or divergent reads may have uncertain orientation; references must be supplied in the intended genomic direction.
 
 License: [MIT](LICENSE).
