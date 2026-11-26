@@ -2,6 +2,7 @@
 
 ## Latest update
 
+- Retired legacy local/SLURM execution config files; use composable `-profile` options instead.
 - Added optional orientation checking of individual reads against each patient's selected reference, including single-read clones, with QC flags.
 - Published merged FASTA and clone-to-read alignment outputs.
 - Simplified the README and code comments.

@@ -7,7 +7,7 @@ This is a downstream pipeline that utilizes some of the outputs of the `nf-viral
 
 - Nextflow and Java (developed with Nextflow 25.10.4)
 - Docker, Singularity, or Apptainer
-- SLURM for HPC runs using the SLURM configurations
+- SLURM for HPC runs
 
 Python and MAFFT are provided by the containers.
 
