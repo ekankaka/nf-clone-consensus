@@ -42,6 +42,18 @@ For Docker or Apptainer, use `configs/local-docker.config` or `configs/local-app
 
 **HPC with SLURM and Singularity:**
 
+Create a cluster-specific `hpc.config` outside the repository:
+
+```groovy
+// hpc.config — customize for your cluster
+process {
+    queue = 'compute'                       // SLURM partition where jobs run
+    clusterOptions = '--account=my_project'  // Additional SLURM options, e.g., user account
+}
+
+singularity.autoMounts = true
+```
+
 ```bash
 export NXF_SINGULARITY_CACHEDIR=/shared/container-cache
 
@@ -53,7 +65,7 @@ nextflow run main.nf \
     -w /shared/scratch/work
 ```
 
-Use `configs/slurm-apptainer.config` for Apptainer. The external HPC config sets cluster-specific options such as partition and account. Work and cache paths must be accessible from compute nodes. Add `-resume` to reuse completed tasks.
+Replace the example partition, account, and paths with your cluster's settings. For Apptainer, use `configs/slurm-apptainer.config`. Work and cache paths must be accessible from compute nodes. Add `-resume` to reuse completed tasks.
 
 ## Method
 
