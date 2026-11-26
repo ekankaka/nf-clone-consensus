@@ -35,7 +35,7 @@ process PREPARE_PATIENT {
     cat > staged_samples.json <<'NF_SAMPLES_EOF'
     ${contents}
     NF_SAMPLES_EOF
-    prepare_patient.py --patient '${patient_id}' --samples staged_samples.json
+    prepare_patient.py --patient '${patient_id}' --samples staged_samples.json --check-orientation ${params.check_orientation}
     """
 }
 
@@ -63,7 +63,7 @@ process ALIGN_CLONES {
         if [[ "\$n" -eq 1 ]]; then
             cp "\$fa" "aligned_clones/\$name"
         else
-            mafft --auto --adjustdirection --thread ${task.cpus} \\
+            mafft --auto --thread ${task.cpus} \\
                 --addfragments "\$fa" '${reference}' > "aligned_clones/\$name"
         fi
     done
