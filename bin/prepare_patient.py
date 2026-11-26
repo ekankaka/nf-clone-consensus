@@ -12,9 +12,12 @@ from urllib.parse import quote
 
 NULLS = {'', 'na', 'n/a', 'null', 'none', 'nan'}
 DNA = set('ACGTRYSWKMBDHVN')
+BASES = set('ACGT')
+RC_TABLE = str.maketrans('ACGTRYSWKMBDHVN', 'TGCAYRSWMKVHDBN')
 ASSIGN_COLUMNS = ['patient_id', 'sample_id', 'timepoint', 'fasta_header', 'READ',
                   'PCR_ID', 'pcr_family_key', 'chromosome', 'INTEGRATION_SITE',
-                  'classification', 'clone_id', 'reason', 'original_length', 'trimmed_length']
+                  'classification', 'clone_id', 'reason', 'original_length', 'trimmed_length',
+                  'orientation', 'forward_matches', 'reverse_matches']
 UNUSED_COLUMNS = ['patient_id', 'sample_id', 'READ', 'PCR_ID', 'chromosome',
                   'INTEGRATION_SITE', 'reason']
 REF_COLUMNS = ['patient_id', 'selected_sample_id', 'selected_timepoint',
@@ -136,6 +139,24 @@ def select_reference(patient, samples):
     return selected, metadata
 
 
+def reference_kmers(seq):
+    return {seq[i:i + 12] for i in range(len(seq) - 11)
+            if set(seq[i:i + 12]) <= BASES}
+
+
+def orient_read(seq, kmers):
+    """Use distinct matching 12-mers to compare both strands against the reference."""
+    reverse = seq.translate(RC_TABLE)[::-1]
+    forward_hits = len(reference_kmers(seq) & kmers)
+    reverse_hits = len(reference_kmers(reverse) & kmers)
+    best, other = max(forward_hits, reverse_hits), min(forward_hits, reverse_hits)
+    if best < 4 or best - other < 3 or best < 2 * other:
+        return seq, 'UNCERTAIN', forward_hits, reverse_hits
+    if reverse_hits > forward_hits:
+        return reverse, 'REVERSE_COMPLEMENTED', forward_hits, reverse_hits
+    return seq, 'FORWARD', forward_hits, reverse_hits
+
+
 def longest_read_prefix(key, indexed):
     """Match a FASTA header to the longest READ prefix in the site table."""
     prefixes = [read for read in indexed if key.startswith(read)]
@@ -148,6 +169,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--patient', required=True)
     parser.add_argument('--samples', required=True)
+    parser.add_argument('--check-orientation', choices=['true', 'false'], default='true')
     args = parser.parse_args()
     patient = args.patient
     samples = json.loads(Path(args.samples).read_text(encoding='utf-8'))
@@ -179,6 +201,7 @@ def main():
 
     # Select one reference for all clones from this patient.
     selected, ref_metadata = select_reference(patient, selected_samples)
+    kmers = reference_kmers(selected['ref_sequence']) if args.check_orientation == 'true' else None
     with open('patient_reference.fasta', 'w', encoding='utf-8') as handle:
         fasta_write(handle, 'NF_REF', selected['ref_sequence'])
     write_csv(f'{patient}.reference_selection.csv', REF_COLUMNS, [ref_metadata])
@@ -202,7 +225,8 @@ def main():
                'fasta_header': head, 'READ': key or '', 'PCR_ID': '', 'pcr_family_key': '',
                'chromosome': '', 'INTEGRATION_SITE': '', 'classification': '',
                'clone_id': '', 'reason': '', 'original_length': rec['original_length'],
-               'trimmed_length': ''}
+               'trimmed_length': '', 'orientation': '',
+               'forward_matches': '', 'reverse_matches': ''}
         if key is None:
             row.update(classification='REVIEW', reason='NO_MATCHING_INTEGRATION_RECORD')
         else:
@@ -231,10 +255,15 @@ def main():
                     elif set(trimmed) - DNA:
                         row.update(classification='REVIEW', reason='INVALID_NUCLEOTIDE_SYMBOL')
                     else:
+                        oriented, status, forward, reverse = (
+                            orient_read(trimmed, kmers) if kmers is not None else
+                            (trimmed, 'NOT_CHECKED', '', '')
+                        )
                         row.update(classification='CLONE', trimmed_length=len(trimmed),
-                                   pcr_family_key=sid + ':' + pcr)
-                        clone_groups[(chrom, site)].append(dict(rec, trimmed=trimmed, READ=key,
-                                                                PCR_ID=pcr, assignment=row))
+                                   pcr_family_key=sid + ':' + pcr, orientation=status,
+                                   forward_matches=forward, reverse_matches=reverse)
+                        clone_groups[(chrom, site)].append(dict(rec, trimmed=oriented, READ=key,
+                                                                PCR_ID=pcr, orientation=status, assignment=row))
         assignments.append(row)
         if row['classification'] == 'REVIEW':
             unresolved.append(rec)
@@ -267,7 +296,8 @@ def main():
                 metadata_reads.append({'internal_id': internal_id, 'sample_id': r['sample_id'],
                                        'timepoint': r['timepoint'], 'READ': r['READ'],
                                        'PCR_ID': r['PCR_ID'], 'fasta_header': r['header'],
-                                       'trimmed_length': len(r['trimmed'])})
+                                       'trimmed_length': len(r['trimmed']),
+                                       'orientation': r['orientation']})
         clone_metadata.append({'clone_id': clone_id, 'patient_id': patient,
                                'chromosome': chrom, 'INTEGRATION_SITE': site,
                                'consensus_header': header, 'n_reads': len(reads),
