@@ -9,9 +9,9 @@ process PREPARE_PATIENT {
     cpus 1
     memory '3 GB'
 
-    publishDir "${params.outdir}/merged_fastas", mode: 'copy', pattern: "${patient_id}_merged.fasta", overwrite: true
-    publishDir "${params.outdir}/unintegrated_sequences", mode: 'copy', pattern: "${patient_id}_unintegrated.fasta", overwrite: true
-    publishDir "${params.outdir}/review/unmatched_fastas", mode: 'copy', pattern: "${patient_id}.unmatched.fasta", overwrite: true
+    publishDir "${params.outdir}/merged_fastas", mode: 'copy', pattern: '*_merged.fasta', overwrite: true
+    publishDir "${params.outdir}/unintegrated_sequences", mode: 'copy', pattern: '*_unintegrated.fasta', overwrite: true
+    publishDir "${params.outdir}/review/unmatched_fastas", mode: 'copy', pattern: '*.unmatched.fasta', overwrite: true
 
     input:
     tuple val(patient_id), val(sample_ids), val(timepoints), val(original_ref_paths), path(fastas, stageAs: 'fastas??????/*'), path(site_files, stageAs: 'sites??????/*'), path(ref_files, stageAs: 'refs??????/*')
@@ -77,7 +77,7 @@ process FINALIZE_PATIENT {
     memory '3 GB'
 
     publishDir "${params.outdir}/clone_consensus", mode: 'copy', pattern: '*_consensus.fasta', overwrite: true
-    publishDir "${params.outdir}/clone_alignments", mode: 'copy', pattern: "${patient_id}", overwrite: true
+    publishDir "${params.outdir}/clone_alignments", mode: 'copy', pattern: '*', saveAs: { name -> (name.endsWith('.fasta') || name.endsWith('.csv')) ? null : name }, overwrite: true
 
     input:
     tuple val(patient_id), path(aligned_clones), path(clone_info), path(counts), path(unmatched), path(assignments), path(unused_sites), path(reference_selection), path(unintegrated)
