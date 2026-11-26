@@ -75,6 +75,9 @@ def column_states(seq):
 
 def make_clone(clone, aln_path, min_fraction, min_family_fraction, min_families):
     reads = clone['reads']
+    reversed_reads = {r['internal_id'] for r in reads
+                      if r.get('orientation') == 'REVERSE_COMPLEMENTED'}
+    uncertain = sum(r.get('orientation') == 'UNCERTAIN' for r in reads)
     if clone['n_reads'] == 1:
         # A site with one read keeps that read after terminal-N trimming.
         obs = list(fasta_iter(aln_path))
@@ -88,15 +91,18 @@ def make_clone(clone, aln_path, min_fraction, min_family_fraction, min_families)
               'max_uncovered_run': 0, 'n_low_support_positions': 0,
               'n_multi_family_supported_positions': 0,
               'percent_positions_multi_family': 0.0,
-              'n_reverse_complemented_reads': 0,
-              'qc_status': 'LIMITED_SUPPORT', 'qc_flags': 'SINGLE_READ'}
-        return seq, qc, [(reads[0].get('fasta_header', reads[0]['internal_id']), seq)], seq
+              'n_reverse_complemented_reads': len(reversed_reads),
+              'n_uncertain_orientation_reads': uncertain,
+              'qc_status': 'REVIEW' if uncertain else 'LIMITED_SUPPORT',
+              'qc_flags': 'SINGLE_READ;UNCERTAIN_ORIENTATION' if uncertain else 'SINGLE_READ'}
+        label = reads[0].get('fasta_header', reads[0]['internal_id'])
+        if reversed_reads:
+            label += ' [reverse_complemented]'
+        return seq, qc, [(label, seq)], seq
 
     observed = list(fasta_iter(aln_path))
     ids = {r['internal_id'] for r in reads}
     aligned = {}
-    reverse_count = 0
-    reversed_reads = set()
     ref = None
     for head, seq in observed:
         label = head.split()[0]
@@ -105,11 +111,6 @@ def make_clone(clone, aln_path, min_fraction, min_family_fraction, min_families)
                 raise ValueError(f"{clone['clone_id']}: duplicate reference in MAFFT output")
             ref = seq.upper().replace('.', '-')
             continue
-        reversed_orientation = label.startswith('_R_')
-        if reversed_orientation:
-            label = label[3:]
-            reverse_count += 1
-            reversed_reads.add(label)
         if label not in ids or label in aligned:
             raise ValueError(f"{clone['clone_id']}: unexpected/duplicate aligned read {label}")
         aligned[label] = seq.upper().replace('.', '-')
@@ -192,8 +193,10 @@ def make_clone(clone, aln_path, min_fraction, min_family_fraction, min_families)
         flags.append('INDEL_CALLS_REVIEW')
     if 'N' in seq:
         flags.append('AMBIGUOUS_CONSENSUS_BASES')
+    if uncertain:
+        flags.append('UNCERTAIN_ORIENTATION')
     # Flag uncertain calls without discarding the clone.
-    qc_status = ('REVIEW' if internal_uncovered or called_deletions or 'N' in seq else
+    qc_status = ('REVIEW' if internal_uncovered or called_deletions or 'N' in seq or uncertain else
                  'LIMITED_SUPPORT' if len(families) == 1 or low_support else 'PASS')
     qc = {'consensus_type': 'single_family_consensus' if len(families) == 1 else 'clone_consensus',
           'n_ambiguous_bases': sum(c not in BASES for c in seq),
@@ -204,7 +207,8 @@ def make_clone(clone, aln_path, min_fraction, min_family_fraction, min_families)
           'n_low_support_positions': low_support,
           'n_multi_family_supported_positions': multi_supported,
           'percent_positions_multi_family': round(100 * multi_supported / n_evaluated, 2),
-          'n_reverse_complemented_reads': reverse_count,
+          'n_reverse_complemented_reads': len(reversed_reads),
+          'n_uncertain_orientation_reads': uncertain,
           'qc_status': qc_status,
           'qc_flags': ';'.join(flags)}
     aligned_reads = []
@@ -222,7 +226,7 @@ CLONE_COLUMNS = ['patient_id', 'clone_id', 'consensus_header', 'chromosome', 'IN
                  'n_multi_family_supported_positions', 'percent_positions_multi_family',
                  'n_low_support_positions', 'n_internal_uncovered_positions',
                  'max_uncovered_run', 'n_called_deletions', 'n_reverse_complemented_reads',
-                 'consensus_type', 'qc_status', 'qc_flags', 'reference_sha256']
+                 'n_uncertain_orientation_reads', 'consensus_type', 'qc_status', 'qc_flags', 'reference_sha256']
 STAT_COLUMNS = ['patient_id', 'n_input_fastas', 'n_input_sequences', 'n_integrated_reads_used',
                 'n_unique_integration_sites', 'n_multifamily_clones', 'n_single_family_clones',
                 'n_single_read_clones', 'n_unintegrated_reads', 'n_review_reads',
