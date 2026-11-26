@@ -36,7 +36,9 @@ A valid clone assignment needs a chromosome, integration site and PCR ID. Invali
 | `unintegrated_sequences/<patient_id>_unintegrated.fasta` | Reads marked `chromosome=HIV` or with a missing integration site; preserves sample-prefixed original headers and sequences |
 | `review/unmatched_fastas/<patient_id>.unmatched.fasta` | Reads excluded from clone construction because their integration-site assignment could not be used |
 
-**Clone alignments:** The consensus is first, followed by its contributing reads (after terminal-N trimming). All sequences share the same alignment coordinates; `-` represents gaps. Reads reversed by MAFFT carry `[reverse_complemented]` in the header. PCR duplicates appear separately but have only one vote per family. The reference is omitted. Single-read alignments contain the consensus and its one read.
+**Clone alignments:** The consensus is first, followed by its contributing reads (after terminal-N trimming). All sequences share the same alignment coordinates; `-` represents gaps. Reads reverse-complemented during preparation carry `[reverse_complemented]` in the header. PCR duplicates appear separately but have only one vote per family. The reference is omitted. Single-read alignments contain the consensus and its one read.
+
+**Orientation check:** Enabled by default (`--check_orientation true`). After trimming terminal Ns, each integrated read is compared in both orientations to the selected patient reference using distinct matching 12-mers. Reorientation requires at least four matches, a difference of at least three, and twice the support of the opposite strand. Inconclusive reads are retained and flagged. Set `--check_orientation false` to keep input orientations. The patient reference must be supplied in the intended genomic direction. Original merged FASTAs are unchanged.
 
 **Clone FASTA header**
 
@@ -81,7 +83,8 @@ One row per constructed clone consensus.
 | `n_internal_uncovered_positions` | Internal reference positions between covered segments with no PCR-family coverage; represented by `N` |
 | `max_uncovered_run` | Longest consecutive span of internally uncovered reference positions |
 | `n_called_deletions` | Alignment columns called as deletions and omitted from the FASTA sequence |
-| `n_reverse_complemented_reads` | Reads reverse-complemented by MAFFT's orientation adjustment |
+| `n_reverse_complemented_reads` | Reads reverse-complemented against the selected patient reference before alignment |
+| `n_uncertain_orientation_reads` | Reads whose orientation could not be determined confidently |
 | `consensus_type` | `clone_consensus`, `single_family_consensus`, or `single_read_consensus` |
 | `qc_status` | `PASS`, `LIMITED_SUPPORT`, or `REVIEW` |
 | `qc_flags` | Semicolon-separated reasons for caution; empty when none |
@@ -99,8 +102,9 @@ One row per constructed clone consensus.
 | `LOW_INDEPENDENT_COVERAGE` | Some covered positions lack sufficient independent PCR-family support |
 | `INDEL_CALLS_REVIEW` | One or more deletions were called; inspect alignment |
 | `AMBIGUOUS_CONSENSUS_BASES` | Consensus contains one or more `N` calls |
+| `UNCERTAIN_ORIENTATION` | At least one clone read could not be oriented confidently |
 
-**QC status:** `PASS` = no flagged issues; `LIMITED_SUPPORT` = limited independent support; `REVIEW` = ambiguous bases, internal coverage gaps or called deletions. These are computational QC labels.
+**QC status:** `PASS` = no flagged issues; `LIMITED_SUPPORT` = limited independent support; `REVIEW` = ambiguous bases, internal coverage gaps, called deletions, or uncertain orientation. These are computational QC labels.
 
 ## 5. `patient_clone_statistics.csv`
 
@@ -161,6 +165,9 @@ When references differ, the highest-read timepoint and then the highest-read sam
 | `reason` | Reason for review, when classification is `REVIEW` |
 | `original_length` | Input FASTA sequence length before terminal-N trimming |
 | `trimmed_length` | Sequence length after trimming, for accepted clone reads |
+| `orientation` | `FORWARD`, `REVERSE_COMPLEMENTED`, `UNCERTAIN`, or `NOT_CHECKED` for accepted clone reads; empty otherwise |
+| `forward_matches` | Distinct 12-mers matching the selected patient reference in the original forward orientation |
+| `reverse_matches` | Distinct 12-mers matching the selected patient reference after reverse complementation |
 
 **Review reasons:** `NO_MATCHING_INTEGRATION_RECORD`, `CONFLICTING_READ_ASSIGNMENTS`, `MISSING_CHROMOSOME_WITH_SITE`, `MISSING_PCR_ID`, `PCR_ID_CONFLICTING_SITES`, `ALL_TERMINAL_NS`, and `INVALID_NUCLEOTIDE_SYMBOL`.
 
