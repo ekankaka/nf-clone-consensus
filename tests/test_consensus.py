@@ -195,18 +195,28 @@ def test_component_reports_end_to_end_without_mafft(tmp_path):
                         '--unintegrated',pid+'_unintegrated.fasta',
                         '--reference-selection',pid+'.reference_selection.csv'],
                        cwd=folder, check=True)
+        fasta_rows = dict(fmod.fasta_iter(folder/f'{pid}_consensus.fasta'))
+        clone_rows = csvrows(folder/f'{pid}.clone_summary.csv')
+        assert len(clone_rows) == len(fasta_rows)
+        for row in clone_rows:
+            assert row['consensus_sequence'] == fasta_rows[row['consensus_header']]
+            assert int(row['consensus_length']) == len(row['consensus_sequence'])
+            alignment_path = folder/f"{row['consensus_header']}_alignment.fasta"
+            assert alignment_path.is_file()
+            assert next(fmod.fasta_iter(alignment_path))[0] == row['consensus_header']
+        assert not (folder/pid).exists()
         if pid=='PT1':
             clone_fa=list(fmod.fasta_iter(folder/'PT1_consensus.fasta'))
             assert clone_fa[0] == ('PT1_chr1_100_5_4','AAAACCCCGGGGTTTT')
             assert clone_fa[1] == ('PT1_chr2_200_1_1','GGGTTT')
             assert len(list(fmod.fasta_iter(folder/'PT1_unintegrated.fasta'))) == 2
-            a = list(fmod.fasta_iter(folder/'PT1'/'PT1_clone000001_alignment.fasta'))
+            a = list(fmod.fasta_iter(folder/'PT1_chr1_100_5_4_alignment.fasta'))
             assert a[0] == ('PT1_chr1_100_5_4', 'AAAACCCCGGGGTTTT')
             assert len(a) == 6
             assert a[1][0] == 'PT1-1_readA_more'
             assert a[1][1] == 'AAAACCCC--------'
             assert all(len(sequence) == len(a[0][1]) for _, sequence in a)
-            b = list(fmod.fasta_iter(folder/'PT1'/'PT1_clone000002_alignment.fasta'))
+            b = list(fmod.fasta_iter(folder/'PT1_chr2_200_1_1_alignment.fasta'))
             assert len(b) == 2 and b[0][1] == b[1][1] == 'GGGTTT'
             assert len(csvrows(folder/'PT1.unmatched.csv')) == 1
             assert csvrows(folder/'PT1.patient_stats.csv')[0]['n_input_sequences'] == '9'
@@ -228,6 +238,8 @@ def test_component_reports_end_to_end_without_mafft(tmp_path):
                     '--unused-sites','*.unused_sites.csv',
                     '--references','*.reference_selection.csv'],cwd=summary,check=True)
     assert len(csvrows(summary/'clone_summary.csv'))==3
+    assert all(row['consensus_sequence']
+               for row in csvrows(summary/'clone_summary.csv'))
     assert len(csvrows(summary/'reference_selection.csv'))==2
     assert len(csvrows(summary/'read_assignments.csv'))==11
     assert len(csvrows(summary/'unmatched_fasta_reads.csv'))==1
@@ -236,6 +248,8 @@ def test_component_reports_end_to_end_without_mafft(tmp_path):
 def test_merged_fasta_is_declared_as_nextflow_output():
     workflow = (ROOT / 'main.nf').read_text()
     assert 'path "${patient_id}_merged.fasta", emit: merged_fasta' in workflow
+    assert "path '*_alignment.fasta', emit: clone_alignments, optional: true" in workflow
+    assert "pattern: '*_alignment.fasta'" in workflow
 
 
 def test_reverse_complemented_read_label(tmp_path):

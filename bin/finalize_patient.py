@@ -222,7 +222,7 @@ def make_clone(clone, aln_path, min_fraction, min_family_fraction, min_families)
 
 CLONE_COLUMNS = ['patient_id', 'clone_id', 'consensus_header', 'chromosome', 'INTEGRATION_SITE',
                  'n_reads', 'n_unique_reads', 'n_samples', 'n_timepoints', 'sample_ids',
-                 'timepoints', 'consensus_length', 'n_evaluated_alignment_columns', 'n_ambiguous_bases', 'percent_N',
+                 'timepoints', 'consensus_length', 'consensus_sequence', 'n_evaluated_alignment_columns', 'n_ambiguous_bases', 'percent_N',
                  'n_multi_family_supported_positions', 'percent_positions_multi_family',
                  'n_low_support_positions', 'n_internal_uncovered_positions',
                  'max_uncovered_run', 'n_called_deletions', 'n_reverse_complemented_reads',
@@ -253,8 +253,6 @@ def main():
     unmatched_count = len(read_csv(args.unmatched))
     no_site_count = len(list(fasta_iter(args.unintegrated)))
     rows = []
-    alignment_dir = Path(args.patient)
-    alignment_dir.mkdir(exist_ok=True)
     with open(f'{args.patient}_consensus.fasta', 'w', encoding='utf-8') as output:
         for clone in clones:
             aligned_file = Path(args.aligned_clones) / (clone['clone_id'] + '.fasta')
@@ -262,7 +260,7 @@ def main():
                 clone, aligned_file, args.min_base_fraction,
                 args.min_family_fraction, args.min_families_per_call)
             fasta_write(output, clone['consensus_header'], seq)
-            with open(alignment_dir / f"{clone['clone_id']}_alignment.fasta", 'w') as alignment:
+            with open(f"{clone['consensus_header']}_alignment.fasta", 'w') as alignment:
                 fasta_write(alignment, clone['consensus_header'], aligned_consensus)
                 for header, sequence in aligned_reads:
                     fasta_write(alignment, header, sequence)
@@ -274,7 +272,7 @@ def main():
                 'n_samples': len(clone['sample_ids']), 'n_timepoints': len(clone['timepoints']),
                 'sample_ids': ';'.join(clone['sample_ids']),
                 'timepoints': ';'.join(clone['timepoints']),
-                'consensus_length': len(seq),
+                'consensus_length': len(seq), 'consensus_sequence': seq,
                 'percent_N': round(100 * seq.count('N') / len(seq), 2),
                 'reference_sha256': ref['reference_sha256'], **qc
             })

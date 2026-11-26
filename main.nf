@@ -77,14 +77,14 @@ process FINALIZE_PATIENT {
     memory '3 GB'
 
     publishDir "${params.outdir}/clone_consensus", mode: 'copy', pattern: '*_consensus.fasta', overwrite: true
-    publishDir "${params.outdir}/clone_alignments", mode: 'copy', pattern: '*', saveAs: { name -> (name.endsWith('.fasta') || name.endsWith('.csv')) ? null : name }, overwrite: true
+    publishDir "${params.outdir}/clone_alignments", mode: 'copy', pattern: '*_alignment.fasta', overwrite: true
 
     input:
     tuple val(patient_id), path(aligned_clones), path(clone_info), path(counts), path(unmatched), path(assignments), path(unused_sites), path(reference_selection), path(unintegrated)
 
     output:
     path "${patient_id}_consensus.fasta", emit: final_fasta
-    path "${patient_id}", emit: clone_alignments
+    path '*_alignment.fasta', emit: clone_alignments, optional: true
     path "${patient_id}.clone_summary.csv", emit: clone_summaries
     path "${patient_id}.patient_stats.csv", emit: stats
     path "${patient_id}.counts.csv", emit: counts

@@ -82,7 +82,7 @@ By default, each trimmed integrated read is checked for orientation against the 
 results/
 ├── merged_fastas/<patient_id>_merged.fasta
 ├── clone_consensus/<patient_id>_consensus.fasta
-├── clone_alignments/<patient_id>/<clone_id>_alignment.fasta
+├── clone_alignments/<consensus_header>_alignment.fasta
 ├── unintegrated_sequences/<patient_id>_unintegrated.fasta
 ├── patient_sequence_counts.csv
 ├── clone_summary.csv
@@ -95,13 +95,13 @@ results/
     └── unmatched_fastas/
 ```
 
-Each clone alignment contains the aligned consensus and its terminal-N-trimmed input reads. Clone consensus headers have the form:
+Each clone alignment is named after its consensus FASTA header and contains the aligned consensus followed by the terminal-N-trimmed input reads. Clone consensus headers have the form:
 
 ```text
 >patient_id_chromosome_INTEGRATION_SITE_n_reads_n_unique_reads
 ```
 
-Here, `n_reads` is the total number of contributing reads and `n_unique_reads` is the number of distinct PCR families. See the [data dictionary](docs/data_dictionary.md) for every output field and QC flag.
+Here, `n_reads` is the total number of contributing reads and `n_unique_reads` is the number of distinct PCR families. `clone_summary.csv` also contains each final `consensus_sequence`. See the [data dictionary](docs/data_dictionary.md) for every output field and QC flag.
 
 ## Limitations
 

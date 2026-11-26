@@ -32,11 +32,11 @@ A valid clone assignment needs a chromosome, integration site and PCR ID. Invali
 |---|---|
 | `merged_fastas/<patient_id>_merged.fasta` | All sample FASTA sequences combined for a patient, with `sample_id_` prefixed to each original header |
 | `clone_consensus/<patient_id>_consensus.fasta` | One sequence for each host integration site, including single-read and single-PCR-family consensuses |
-| `clone_alignments/<patient_id>/<clone_id>_alignment.fasta` | One FASTA alignment per integrated clone; the consensus followed by all contributing terminal-N-trimmed reads |
+| `clone_alignments/<consensus_header>_alignment.fasta` | One FASTA alignment per integrated clone; the consensus followed by all contributing terminal-N-trimmed reads |
 | `unintegrated_sequences/<patient_id>_unintegrated.fasta` | Reads marked `chromosome=HIV` or with a missing integration site; preserves sample-prefixed original headers and sequences |
 | `review/unmatched_fastas/<patient_id>.unmatched.fasta` | Reads excluded from clone construction because their integration-site assignment could not be used |
 
-**Clone alignments:** The consensus is first, followed by its contributing reads (after terminal-N trimming). All sequences share the same alignment coordinates; `-` represents gaps. Reads reverse-complemented during preparation carry `[reverse_complemented]` in the header. PCR duplicates appear separately but have only one vote per family. The reference is omitted. Single-read alignments contain the consensus and its one read.
+**Clone alignments:** All files are directly under `clone_alignments/` and named from the consensus FASTA header (without `>`). The consensus is first, followed by its contributing reads (after terminal-N trimming). All sequences share the same alignment coordinates; `-` represents gaps. Reads reverse-complemented during preparation carry `[reverse_complemented]` in the header. PCR duplicates appear separately but have only one vote per family. The reference is omitted. Single-read alignments contain the consensus and its one read.
 
 **Orientation check:** Enabled by default (`--check_orientation true`). After trimming terminal Ns, each integrated read is compared in both orientations to the selected patient reference using distinct matching 12-mers. Reorientation requires at least four matches, a difference of at least three, and twice the support of the opposite strand. Inconclusive reads are retained and flagged. Set `--check_orientation false` to keep input orientations. The patient reference must be supplied in the intended genomic direction. Original merged FASTAs are unchanged.
 
@@ -74,6 +74,7 @@ One row per constructed clone consensus.
 | `sample_ids` | Semicolon-separated contributing sample IDs |
 | `timepoints` | Semicolon-separated contributing timepoints |
 | `consensus_length` | Length in nucleotides of the final consensus FASTA sequence, excluding called deletions |
+| `consensus_sequence` | Final ungapped clone consensus sequence, identical to its record in `clone_consensus/<patient_id>_consensus.fasta` (including `N` calls) |
 | `n_evaluated_alignment_columns` | Number of alignment columns between the first and last covered columns, including deleted columns |
 | `n_ambiguous_bases` | Number of consensus characters not equal to A/C/G/T |
 | `percent_N` | Percentage of the final consensus sequence represented by `N` |
