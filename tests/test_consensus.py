@@ -240,11 +240,89 @@ def test_merged_fasta_is_declared_as_nextflow_output():
 
 def test_reverse_complemented_read_label(tmp_path):
     clone = {'clone_id':'PT1_clone000005','n_reads':2,'n_unique_reads':2,'reads':[
-        {'internal_id':'R0000001','sample_id':'PT1-1','PCR_ID':'A', 'fasta_header':'PT1-1_readA'},
-        {'internal_id':'R0000002','sample_id':'PT1-2','PCR_ID':'B', 'fasta_header':'PT1-2_readB'}]}
+        {'internal_id':'R0000001','sample_id':'PT1-1','PCR_ID':'A',
+         'fasta_header':'PT1-1_readA', 'orientation':'FORWARD'},
+        {'internal_id':'R0000002','sample_id':'PT1-2','PCR_ID':'B',
+         'fasta_header':'PT1-2_readB', 'orientation':'REVERSE_COMPLEMENTED'}]}
     aln = make_alignment_file(tmp_path,clone['clone_id'],[
-        ('NF_REF','AAAA'), ('R0000001','AAAA'),('_R_R0000002','AAAA')])
+        ('NF_REF','AAAA'), ('R0000001','AAAA'),('R0000002','AAAA')])
     seq, qc, reads, aligned = fmod.make_clone(clone,aln,.60,.60,2)
     assert seq == aligned == 'AAAA'
     assert reads == [('PT1-1_readA','AAAA'),('PT1-2_readB [reverse_complemented]','AAAA')]
     assert qc['n_reverse_complemented_reads'] == 1
+
+
+def test_orientation_check_enabled_and_disabled(tmp_path):
+    import random
+
+    reference = ''.join(random.Random(41).choices('ACGT', k=220))
+    fragment = reference[35:125]
+    reversed_fragment = fragment.translate(pmod.RC_TABLE)[::-1]
+    (tmp_path/'ref.fa').write_text('>ref\\n' + reference + '\\n')
+    (tmp_path/'reads.fa').write_text(
+        '>readA\\nNN' + reversed_fragment + 'NN\\n'
+        '>readB\\nNN' + fragment + 'NN\\n')
+    (tmp_path/'sites.csv').write_text(
+        'READ,PCR_ID,chromosome,INTEGRATION_SITE\\n'
+        'readA,P1,chr1,100\\nreadB,P2,chr1,100\\n')
+    sample = [{'sample_id':'PT1-1','timepoint':'1',
+               'fasta':str(tmp_path/'reads.fa'),
+               'integration_site':str(tmp_path/'sites.csv'),
+               'reference':str(tmp_path/'ref.fa')}]
+
+    for enabled in ('true', 'false'):
+        folder = tmp_path / enabled
+        folder.mkdir()
+        staged = folder/'staged.json'
+        staged.write_text(json.dumps(sample))
+        subprocess.run([sys.executable,str(ROOT/'bin/prepare_patient.py'),
+                        '--patient','PT1','--samples',str(staged),
+                        '--check-orientation',enabled],cwd=folder,check=True)
+        clone = json.loads((folder/'clone_info.json').read_text())[0]
+        records = list(fmod.fasta_iter(folder/'clone_inputs'/(clone['clone_id']+'.fasta')))
+        assignments = csvrows(folder/'PT1.assignments.csv')
+        assert 'NN' + reversed_fragment + 'NN' in (folder/'PT1_merged.fasta').read_text()
+        if enabled == 'true':
+            assert [r['orientation'] for r in clone['reads']] == [
+                'REVERSE_COMPLEMENTED', 'FORWARD']
+            assert [seq for _,seq in records] == [fragment,fragment]
+            assert int(assignments[0]['reverse_matches']) > int(assignments[0]['forward_matches'])
+        else:
+            assert all(r['orientation'] == 'NOT_CHECKED' for r in clone['reads'])
+            assert [seq for _,seq in records] == [reversed_fragment,fragment]
+            assert all(a['forward_matches'] == '' for a in assignments)
+
+
+def test_uncertain_orientation_is_not_forced():
+    reference = 'ACGTAGCTACGTAGCTACGTAGCT'
+    sequence, status, forward, reverse = pmod.orient_read(
+        'ACGT', pmod.reference_kmers(reference))
+    assert sequence == 'ACGT' and status == 'UNCERTAIN'
+    assert forward == reverse == 0
+
+
+def test_uncertain_orientation_is_flagged_in_clone_qc(tmp_path):
+    clone = {'clone_id':'PT1_clone000006','n_reads':2,'n_unique_reads':2,'reads':[
+        {'internal_id':'R0000001','sample_id':'PT1-1','PCR_ID':'A',
+         'orientation':'UNCERTAIN'},
+        {'internal_id':'R0000002','sample_id':'PT1-2','PCR_ID':'B',
+         'orientation':'FORWARD'}]}
+    aln = make_alignment_file(tmp_path,clone['clone_id'],[
+        ('NF_REF','AAAA'),('R0000001','AAAA'),('R0000002','AAAA')])
+    seq, qc, _, _ = fmod.make_clone(clone,aln,.60,.60,2)
+    assert seq == 'AAAA'
+    assert qc['n_uncertain_orientation_reads'] == 1
+    assert qc['qc_status'] == 'REVIEW'
+    assert 'UNCERTAIN_ORIENTATION' in qc['qc_flags']
+
+
+def test_single_read_orientation_is_recorded(tmp_path):
+    clone = {'clone_id':'PT1_clone000007','n_reads':1,'n_unique_reads':1,'reads':[
+        {'internal_id':'R0000001','sample_id':'PT1-1','PCR_ID':'A',
+         'fasta_header':'PT1-1_readA','orientation':'REVERSE_COMPLEMENTED'}]}
+    aln = make_alignment_file(tmp_path,clone['clone_id'],[('R0000001','AACCGG')])
+    seq, qc, reads, _ = fmod.make_clone(clone,aln,.60,.60,2)
+    assert seq == 'AACCGG'
+    assert reads == [('PT1-1_readA [reverse_complemented]','AACCGG')]
+    assert qc['n_reverse_complemented_reads'] == 1
+    assert qc['n_uncertain_orientation_reads'] == 0
