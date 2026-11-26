@@ -3,7 +3,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 nextflow run main.nf \
-    -c configs/local-singularity.config \
+    -profile local,singularity \
     --input tests/data/annotation.csv \
     --outdir results_test \
     "$@"
