@@ -258,13 +258,13 @@ def test_orientation_check_enabled_and_disabled(tmp_path):
     reference = ''.join(random.Random(41).choices('ACGT', k=220))
     fragment = reference[35:125]
     reversed_fragment = fragment.translate(pmod.RC_TABLE)[::-1]
-    (tmp_path/'ref.fa').write_text('>ref\\n' + reference + '\\n')
+    (tmp_path/'ref.fa').write_text('>ref\n' + reference + '\n')
     (tmp_path/'reads.fa').write_text(
-        '>readA\\nNN' + reversed_fragment + 'NN\\n'
-        '>readB\\nNN' + fragment + 'NN\\n')
+        '>readA\nNN' + reversed_fragment + 'NN\n'
+        '>readB\nNN' + fragment + 'NN\n')
     (tmp_path/'sites.csv').write_text(
-        'READ,PCR_ID,chromosome,INTEGRATION_SITE\\n'
-        'readA,P1,chr1,100\\nreadB,P2,chr1,100\\n')
+        'READ,PCR_ID,chromosome,INTEGRATION_SITE\n'
+        'readA,P1,chr1,100\nreadB,P2,chr1,100\n')
     sample = [{'sample_id':'PT1-1','timepoint':'1',
                'fasta':str(tmp_path/'reads.fa'),
                'integration_site':str(tmp_path/'sites.csv'),
