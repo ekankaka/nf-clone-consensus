@@ -2,6 +2,7 @@
 
 ## Latest update
 
+- Added optional orientation checking of individual reads against each patient's selected reference, including single-read clones, with QC flags.
 - Published merged FASTA and clone-to-read alignment outputs.
 - Simplified the README and code comments.
 - Added the corresponding output definitions to the data dictionary.
