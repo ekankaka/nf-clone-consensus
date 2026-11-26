@@ -26,29 +26,31 @@ Paths may be absolute or relative to the CSV location. The integration-site file
 
 ## Run
 
-**Optional example run (Singularity):**
+Choose one executor (`local` or `slurm`) and one container engine (`docker`, `singularity`, or `apptainer`) using `-profile`.
+
+**Local example (Singularity):**
 
 ```bash
 git clone https://github.com/ekankaka/nf-clone-consensus.git
 cd nf-clone-consensus
 
 nextflow run main.nf \
-    -c configs/local-singularity.config \
+    -profile local,singularity \
     --input tests/data/annotation.csv \
     --outdir results_test
 ```
 
-For Docker or Apptainer, use `configs/local-docker.config` or `configs/local-apptainer.config`. To analyze your data, replace `--input` and `--outdir` with your paths.
+Use `-profile local,docker` or `-profile local,apptainer` for other container engines. Replace the input and output paths to run your data.
 
-**HPC with SLURM and Singularity:**
+**HPC example (SLURM and Singularity):**
 
-Create a cluster-specific `hpc.config` outside the repository:
+Create an external `hpc.config` for your cluster:
 
 ```groovy
 // hpc.config — customize for your cluster
 process {
-    queue = 'compute'                       // SLURM partition where jobs run
-    clusterOptions = '--account=my_project'  // Additional SLURM options, e.g., user account
+    queue = 'compute'                        // SLURM partition where jobs run
+    clusterOptions = '--account=my_project'   // Additional SLURM options, e.g., user account
 }
 
 singularity.autoMounts = true
@@ -58,14 +60,15 @@ singularity.autoMounts = true
 export NXF_SINGULARITY_CACHEDIR=/shared/container-cache
 
 nextflow run main.nf \
-    -c configs/slurm-singularity.config \
+    -profile slurm,singularity \
     -c /path/to/hpc.config \
     --input /path/to/annotation.csv \
     --outdir /path/to/results \
-    -w /shared/scratch/work
+    -w /shared/scratch/work \
+    -resume
 ```
 
-Replace the example partition, account, and paths with your cluster's settings. For Apptainer, use `configs/slurm-apptainer.config`. Work and cache paths must be accessible from compute nodes. Add `-resume` to reuse completed tasks.
+For Apptainer, use `-profile slurm,apptainer`. Replace the example partition, account, and paths with your cluster's settings. Work and cache directories must be accessible from compute nodes.
 
 ## Method
 
